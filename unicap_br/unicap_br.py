@@ -11,7 +11,10 @@
 """
 import re
 import mechanize
+import requests
 import cookielib
+import codecs
+
 from datetime import date
 from BeautifulSoup import BeautifulSoup
 
@@ -20,6 +23,7 @@ LOGIN_PAGE = ('http://www.unicap.br/pergamum/Pergamum/biblioteca_s/php/login_'
 RENOV_PAGE = ('http://www.unicap.br/pergamum/Pergamum/biblioteca_s/php/au_pe'
               'ndente.php?titpag=%20Renova%E7%E3o&tipo=renovacao&flag=index.'
               'php')
+PORTAL_PAGE = 'http://www.unicap.br/PortalGraduacao/PortalGraduacao'
 DEBUG = False
 
 
@@ -48,12 +52,17 @@ class Book(object):
         return not self.__eq__(other)
 
 
-class Library(object):
-
+class Unicap(object):
     def __init__(self, login, password):
         self.login = login
         self.password = password
         self._login()
+
+    def _login(self):
+        raise NotImplementedError
+
+
+class Library(Unicap):
 
     def get_books(self):
         """
@@ -158,3 +167,31 @@ class Library(object):
                 print u'Nenhum livro renovado.'
             return None
         return done
+
+
+class UnicapPortal(Unicap):
+    def _login(self):
+        self.data = {
+            'Matricula': self.login[:-1], 'Digito': self.login[-1],
+            'Senha': self.password, 'Rotina': '0',
+        }
+
+        r = requests.post(PORTAL_PAGE, self.data)
+
+        # Nova senha, utilizada para todas outras requisições
+        soup = BeautifulSoup(r.content)
+        pass_input = soup.find('input', attrs={'name': 'Senha'})
+
+        self.data['Senha'] = pass_input.get('value')
+
+    def get_bill(self, parcel):
+        self.data.update({'Rotina': '11', 'Parcela': str(parcel)})
+        r = requests.post(PORTAL_PAGE, self.data)
+
+        with codecs.open('boleto_%s.html' % str(parcel), 'w', 'latin-1') as f:
+            f.write(r.content)
+
+        # Clean data dict
+        del self.data['Parcela']
+
+        return True
