@@ -9,20 +9,17 @@ import sys
 def renewer():
     parser = OptionParser(
             usage="./%prog -m MATRICULA -p SENHA -d DIAS",
-            version="%prog 0.1",
-        )
+            version="%prog 0.1")
 
     parser.add_option(
             '-d', '--dias', dest='dias', type='int',
-            help=u'Número de dias faltando para realizar a renovacao',
-        )
+            help=u'Número de dias faltando para realizar a renovacao')
 
     parser.add_option('-m', '--matricula', dest='matricula')
 
     parser.add_option(
             '-p', '--password', dest='password',
-            help='Senha da biblioteca',
-        )
+            help='Senha da biblioteca')
 
     (options, args) = parser.parse_args()
     if not options.dias or not options.matricula or not options.password:
